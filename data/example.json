@@ -1,0 +1,20 @@
+{
+  "settings": {
+    "preview_background": "#00ff00",
+    "display_duration_seconds": 5
+  },
+  "participants": [
+    {
+      "id": "example-guest",
+      "name": "John Smith",
+      "title": "Product Manager",
+      "subtitle": ""
+    },
+    {
+      "id": "example-host",
+      "name": "Jane Doe",
+      "title": "Lead Engineer",
+      "subtitle": "Acme Corp"
+    }
+  ]
+}
