@@ -1,7 +1,11 @@
 {
   "settings": {
     "preview_background": "#00ff00",
-    "display_duration_seconds": 5
+    "display_duration_seconds": 5,
+    "lower_third_style": "default",
+    "lower_third_background": "",
+    "lower_third_bar_color": "#00608c",
+    "lower_third_accent_color": "#00007f"
   },
   "participants": [
     {

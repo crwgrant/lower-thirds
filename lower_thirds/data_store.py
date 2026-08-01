@@ -9,12 +9,20 @@ from lower_thirds.models import Participant
 class DataStore:
     DEFAULT_PREVIEW_BACKGROUND = "#00ff00"
     DEFAULT_DISPLAY_DURATION_SECONDS = 5
+    LOWER_THIRD_STYLE_DEFAULT = "default"
+    LOWER_THIRD_STYLE_CUSTOM = "custom"
+    DEFAULT_LOWER_THIRD_BAR_COLOR = "#141414"
+    DEFAULT_LOWER_THIRD_ACCENT_COLOR = "#e63946"
 
     def __init__(self) -> None:
         self.participants: list[Participant] = []
         self.file_path: Path | None = None
         self.preview_background = self.DEFAULT_PREVIEW_BACKGROUND
         self.display_duration_seconds = self.DEFAULT_DISPLAY_DURATION_SECONDS
+        self.lower_third_style = self.LOWER_THIRD_STYLE_DEFAULT
+        self.lower_third_background = ""
+        self.lower_third_bar_color = self.DEFAULT_LOWER_THIRD_BAR_COLOR
+        self.lower_third_accent_color = self.DEFAULT_LOWER_THIRD_ACCENT_COLOR
 
     def load(self, path: Path) -> None:
         with path.open(encoding="utf-8") as handle:
@@ -31,6 +39,19 @@ class DataStore:
                 self.DEFAULT_DISPLAY_DURATION_SECONDS,
             )
         )
+        self.lower_third_style = settings.get(
+            "lower_third_style",
+            self.LOWER_THIRD_STYLE_DEFAULT,
+        )
+        self.lower_third_background = settings.get("lower_third_background", "")
+        self.lower_third_bar_color = settings.get(
+            "lower_third_bar_color",
+            self.DEFAULT_LOWER_THIRD_BAR_COLOR,
+        )
+        self.lower_third_accent_color = settings.get(
+            "lower_third_accent_color",
+            self.DEFAULT_LOWER_THIRD_ACCENT_COLOR,
+        )
         self.participants = [
             Participant.from_dict(item) for item in payload.get("participants", [])
         ]
@@ -46,6 +67,10 @@ class DataStore:
             "settings": {
                 "preview_background": self.preview_background,
                 "display_duration_seconds": self.display_duration_seconds,
+                "lower_third_style": self.lower_third_style,
+                "lower_third_background": self.lower_third_background,
+                "lower_third_bar_color": self.lower_third_bar_color,
+                "lower_third_accent_color": self.lower_third_accent_color,
             },
             "participants": [p.to_dict() for p in self.participants],
         }
@@ -105,3 +130,18 @@ class DataStore:
         participant = self.participants.pop(from_index)
         self.participants.insert(to_index, participant)
         return True
+
+    def resolve_lower_third_background_path(self) -> Path | None:
+        if not self.lower_third_background:
+            return None
+
+        path = Path(self.lower_third_background).expanduser()
+        if path.is_file():
+            return path
+
+        if self.file_path is not None and not path.is_absolute():
+            relative = self.file_path.parent / path
+            if relative.is_file():
+                return relative
+
+        return None

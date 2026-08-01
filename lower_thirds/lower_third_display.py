@@ -1,9 +1,12 @@
 from __future__ import annotations
 
-from PyQt6.QtCore import QEasingCurve, QPoint, QPropertyAnimation
-from PyQt6.QtGui import QColor, QFont, QPainter, QPen
+from pathlib import Path
+
+from PyQt6.QtCore import QEasingCurve, QPoint, QPropertyAnimation, Qt
+from PyQt6.QtGui import QColor, QFont, QPainter, QPen, QPixmap
 from PyQt6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
+from lower_thirds.data_store import DataStore
 from lower_thirds.models import Participant
 
 
@@ -12,6 +15,10 @@ class LowerThirdBar(QWidget):
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        self._style = DataStore.LOWER_THIRD_STYLE_DEFAULT
+        self._background_pixmap = QPixmap()
+        self._bar_color = QColor(DataStore.DEFAULT_LOWER_THIRD_BAR_COLOR)
+        self._accent_color = QColor(DataStore.DEFAULT_LOWER_THIRD_ACCENT_COLOR)
 
         self.name_label = QLabel(self)
         self.title_label = QLabel(self)
@@ -33,7 +40,41 @@ class LowerThirdBar(QWidget):
         layout.addWidget(self.subtitle_label)
 
         self.setFixedHeight(110)
+        self.setAttribute(Qt.WidgetAttribute.WA_OpaquePaintEvent, True)
         self.hide()
+
+    def set_style(self, style: str, background_path: Path | None = None) -> None:
+        self._style = style
+        self._background_pixmap = QPixmap()
+
+        if style == DataStore.LOWER_THIRD_STYLE_CUSTOM and background_path is not None:
+            pixmap = QPixmap(str(background_path))
+            if not pixmap.isNull():
+                self._background_pixmap = pixmap
+                height = max(110, int(110 * (pixmap.height() / max(pixmap.width(), 1))))
+                self.setFixedHeight(min(height, 220))
+
+        if self._background_pixmap.isNull():
+            self._style = DataStore.LOWER_THIRD_STYLE_DEFAULT
+            self.setFixedHeight(110)
+
+        self.update()
+
+    def set_default_appearance(self, bar_color: str, accent_color: str) -> None:
+        parsed_bar = QColor(bar_color)
+        parsed_accent = QColor(accent_color)
+        if parsed_bar.isValid():
+            parsed_bar.setAlpha(255)
+            self._bar_color = parsed_bar
+        if parsed_accent.isValid():
+            parsed_accent.setAlpha(255)
+            self._accent_color = parsed_accent
+        self.update()
+
+    def _opaque_accent_color(self) -> QColor:
+        color = QColor(self._accent_color)
+        color.setAlpha(255)
+        return color
 
     def set_participant(self, participant: Participant | None) -> None:
         if participant is None:
@@ -53,11 +94,17 @@ class LowerThirdBar(QWidget):
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
         rect = self.rect()
-        painter.fillRect(rect, QColor(20, 20, 20, 230))
-
-        accent_rect = rect.adjusted(0, 0, 0, 0)
-        accent_rect.setWidth(8)
-        painter.fillRect(accent_rect, QColor("#e63946"))
+        if self._style == DataStore.LOWER_THIRD_STYLE_CUSTOM and not self._background_pixmap.isNull():
+            scaled = self._background_pixmap.scaled(
+                rect.size(),
+                Qt.AspectRatioMode.IgnoreAspectRatio,
+                Qt.TransformationMode.SmoothTransformation,
+            )
+            painter.drawPixmap(rect.topLeft(), scaled)
+        else:
+            accent_width = 8
+            painter.fillRect(rect.adjusted(accent_width, 0, 0, 0), self._bar_color)
+            painter.fillRect(0, 0, accent_width, rect.height(), self._opaque_accent_color())
 
         super().paintEvent(event)
 
@@ -76,6 +123,17 @@ class LowerThirdDisplay(QWidget):
         self._active_participant_id: str | None = None
         self._background_color = QColor("#00ff00")
         self.set_background_color(self._background_color)
+
+    def set_lower_third_style(self, style: str, background_path: Path | None = None) -> None:
+        self.lower_third.set_style(style, background_path)
+        if self._slide_animation is None or self._slide_animation.state() != QPropertyAnimation.State.Running:
+            bar_width = max(360, self.width() - self.MARGIN * 2)
+            self.lower_third.setFixedWidth(bar_width)
+            x = self._rest_x() if self._active_participant_id else self._hidden_x()
+            self._position_bar(x)
+
+    def set_default_lower_third_appearance(self, bar_color: str, accent_color: str) -> None:
+        self.lower_third.set_default_appearance(bar_color, accent_color)
 
     def set_background_color(self, color: QColor | str) -> None:
         if isinstance(color, str):

@@ -18,6 +18,7 @@ from PyQt6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QSpinBox,
+    QComboBox,
     QVBoxLayout,
     QWidget,
 )
@@ -190,6 +191,56 @@ class MainWindow(QMainWindow):
         timer_controls.addWidget(self.display_duration_spin)
         timer_controls.addStretch()
 
+        self.lower_third_style_combo = QComboBox()
+        self.lower_third_style_combo.addItem(
+            "Default",
+            DataStore.LOWER_THIRD_STYLE_DEFAULT,
+        )
+        self.lower_third_style_combo.addItem(
+            "Custom background",
+            DataStore.LOWER_THIRD_STYLE_CUSTOM,
+        )
+        self.lower_third_style_combo.currentIndexChanged.connect(
+            self._on_lower_third_style_changed
+        )
+
+        self.import_lower_third_button = QPushButton("Import Background…")
+        self.import_lower_third_button.clicked.connect(self.import_lower_third_background)
+
+        self.lower_third_style_label = QLabel()
+        self.lower_third_style_label.setStyleSheet("color: #666;")
+
+        style_controls = QHBoxLayout()
+        style_controls.addWidget(QLabel("Lower third style:"))
+        style_controls.addWidget(self.lower_third_style_combo)
+        style_controls.addWidget(self.import_lower_third_button)
+        style_controls.addWidget(self.lower_third_style_label, stretch=1)
+
+        self.bar_color_swatch = QLabel()
+        self.bar_color_swatch.setFixedSize(28, 28)
+        self.bar_color_button = QPushButton("Bar Color…")
+        self.bar_color_button.clicked.connect(self.choose_lower_third_bar_color)
+
+        self.accent_color_swatch = QLabel()
+        self.accent_color_swatch.setFixedSize(28, 28)
+        self.accent_color_button = QPushButton("Accent Color…")
+        self.accent_color_button.clicked.connect(self.choose_lower_third_accent_color)
+
+        self._default_appearance_widgets = (
+            self.bar_color_swatch,
+            self.bar_color_button,
+            self.accent_color_swatch,
+            self.accent_color_button,
+        )
+
+        appearance_controls = QHBoxLayout()
+        appearance_controls.addWidget(QLabel("Default appearance:"))
+        appearance_controls.addWidget(self.bar_color_swatch)
+        appearance_controls.addWidget(self.bar_color_button)
+        appearance_controls.addWidget(self.accent_color_swatch)
+        appearance_controls.addWidget(self.accent_color_button)
+        appearance_controls.addStretch()
+
         open_button = QPushButton("Open JSON…")
         open_button.clicked.connect(self.open_file)
 
@@ -219,12 +270,19 @@ class MainWindow(QMainWindow):
         layout.addLayout(participant_actions)
         layout.addWidget(self.participant_list, stretch=1)
         layout.addLayout(timer_controls)
+        layout.addLayout(style_controls)
+        layout.addLayout(appearance_controls)
         layout.addLayout(preview_controls)
         layout.addWidget(self.lower_third_display)
         self.setCentralWidget(container)
 
+        style, background = self._load_lower_third_style_settings()
+        self.store.lower_third_style = style
+        self.store.lower_third_background = background
         self.apply_preview_background(self._load_preview_background())
         self.apply_display_duration(self._load_display_duration())
+        self.apply_default_lower_third_appearance(self._load_default_appearance_settings())
+        self.apply_lower_third_style()
         self._restore_last_json_file()
         self.refresh_participant_list()
 
@@ -268,6 +326,10 @@ class MainWindow(QMainWindow):
         self._save_preview_background(self.store.preview_background)
         self.apply_display_duration(self.store.display_duration_seconds)
         self._save_display_duration(self.store.display_duration_seconds)
+        self.apply_default_lower_third_appearance()
+        self._save_default_appearance_settings()
+        self.apply_lower_third_style()
+        self._save_lower_third_style_settings()
         self._save_last_json_file(path)
         return True
 
@@ -474,3 +536,155 @@ class MainWindow(QMainWindow):
         if not chosen.isValid():
             return
         self.set_preview_background(chosen.name())
+
+    def _load_lower_third_style_settings(self) -> tuple[str, str]:
+        style = self._settings().value(
+            "lower_third_style",
+            DataStore.LOWER_THIRD_STYLE_DEFAULT,
+            type=str,
+        )
+        background = self._settings().value("lower_third_background", "", type=str)
+        return style, background
+
+    def _save_lower_third_style_settings(self) -> None:
+        self._settings().setValue("lower_third_style", self.store.lower_third_style)
+        self._settings().setValue("lower_third_background", self.store.lower_third_background)
+
+    def apply_lower_third_style(self) -> None:
+        style = self.store.lower_third_style
+        background_path = self.store.resolve_lower_third_background_path()
+
+        if style == DataStore.LOWER_THIRD_STYLE_CUSTOM and background_path is None:
+            style = DataStore.LOWER_THIRD_STYLE_DEFAULT
+            self.store.lower_third_style = style
+
+        self.lower_third_display.set_lower_third_style(style, background_path)
+
+        combo_index = self.lower_third_style_combo.findData(style)
+        self.lower_third_style_combo.blockSignals(True)
+        self.lower_third_style_combo.setCurrentIndex(max(0, combo_index))
+        self.lower_third_style_combo.blockSignals(False)
+
+        using_custom = style == DataStore.LOWER_THIRD_STYLE_CUSTOM
+        self.import_lower_third_button.setEnabled(using_custom)
+
+        if using_custom and background_path is not None:
+            self.lower_third_style_label.setText(str(background_path))
+        elif using_custom:
+            self.lower_third_style_label.setText("No background imported")
+        else:
+            self.lower_third_style_label.setText("Using built-in default lower third")
+
+        self._update_default_appearance_enabled()
+
+    def _update_default_appearance_enabled(self) -> None:
+        enabled = self.store.lower_third_style == DataStore.LOWER_THIRD_STYLE_DEFAULT
+        for widget in self._default_appearance_widgets:
+            widget.setEnabled(enabled)
+
+    def _set_color_swatch(self, swatch: QLabel, color: str) -> None:
+        parsed = QColor(color)
+        if not parsed.isValid():
+            parsed = QColor("#000000")
+        swatch.setStyleSheet(
+            f"background-color: {parsed.name()}; border: 1px solid #888;"
+        )
+
+    def _load_default_appearance_settings(self) -> tuple[str, str]:
+        bar_color = self._settings().value(
+            "lower_third_bar_color",
+            self.store.lower_third_bar_color,
+            type=str,
+        )
+        accent_color = self._settings().value(
+            "lower_third_accent_color",
+            self.store.lower_third_accent_color,
+            type=str,
+        )
+        return bar_color, accent_color
+
+    def _save_default_appearance_settings(self) -> None:
+        self._settings().setValue("lower_third_bar_color", self.store.lower_third_bar_color)
+        self._settings().setValue("lower_third_accent_color", self.store.lower_third_accent_color)
+
+    def apply_default_lower_third_appearance(
+        self,
+        appearance: tuple[str, str] | None = None,
+    ) -> None:
+        if appearance is None:
+            bar_color = self.store.lower_third_bar_color
+            accent_color = self.store.lower_third_accent_color
+        else:
+            bar_color, accent_color = appearance
+            self.store.lower_third_bar_color = bar_color
+            self.store.lower_third_accent_color = accent_color
+
+        parsed_bar = QColor(bar_color)
+        if not parsed_bar.isValid():
+            parsed_bar = QColor(DataStore.DEFAULT_LOWER_THIRD_BAR_COLOR)
+            bar_color = parsed_bar.name()
+            self.store.lower_third_bar_color = bar_color
+
+        parsed_accent = QColor(accent_color)
+        if not parsed_accent.isValid():
+            parsed_accent = QColor(DataStore.DEFAULT_LOWER_THIRD_ACCENT_COLOR)
+            accent_color = parsed_accent.name()
+            self.store.lower_third_accent_color = accent_color
+
+        self._set_color_swatch(self.bar_color_swatch, bar_color)
+        self._set_color_swatch(self.accent_color_swatch, accent_color)
+
+        self.lower_third_display.set_default_lower_third_appearance(
+            bar_color,
+            accent_color,
+        )
+        self.lower_third_display.update()
+
+    def choose_lower_third_bar_color(self) -> None:
+        current = QColor(self.store.lower_third_bar_color)
+        chosen = QColorDialog.getColor(current, self, "Choose Bar Background Color")
+        if not chosen.isValid():
+            return
+        self.store.lower_third_bar_color = chosen.name()
+        self.apply_default_lower_third_appearance()
+        self._save_default_appearance_settings()
+
+    def choose_lower_third_accent_color(self) -> None:
+        current = QColor(self.store.lower_third_accent_color)
+        chosen = QColorDialog.getColor(current, self, "Choose Accent Bar Color")
+        if not chosen.isValid():
+            return
+        self.store.lower_third_accent_color = chosen.name()
+        self.apply_default_lower_third_appearance()
+        self._save_default_appearance_settings()
+
+    def _on_lower_third_style_changed(self) -> None:
+        style = self.lower_third_style_combo.currentData()
+        if style == DataStore.LOWER_THIRD_STYLE_CUSTOM and not self.store.lower_third_background:
+            self.import_lower_third_background()
+            if not self.store.lower_third_background:
+                self.apply_lower_third_style()
+                return
+
+        self.store.lower_third_style = style
+        self.apply_lower_third_style()
+        self._save_lower_third_style_settings()
+
+    def import_lower_third_background(self) -> None:
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Import Lower Third Background",
+            self._default_json_directory(),
+            "Images (*.png *.jpg *.jpeg *.webp *.bmp)",
+        )
+        if not path:
+            return
+
+        if not Path(path).is_file():
+            QMessageBox.warning(self, "Import Failed", "Could not find the selected image.")
+            return
+
+        self.store.lower_third_style = DataStore.LOWER_THIRD_STYLE_CUSTOM
+        self.store.lower_third_background = str(Path(path))
+        self.apply_lower_third_style()
+        self._save_lower_third_style_settings()
