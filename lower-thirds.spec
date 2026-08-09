@@ -9,6 +9,8 @@ block_cipher = None
 
 project_root = Path(SPECPATH)
 entry_point = project_root / "lower_thirds" / "app.py"
+icon_ico = project_root / "assets" / "icon.ico"
+icon_icns = project_root / "assets" / "icon.icns"
 
 pyqt6_datas, pyqt6_binaries, pyqt6_hiddenimports = collect_all("PyQt6")
 
@@ -18,6 +20,7 @@ a = Analysis(
     binaries=pyqt6_binaries,
     datas=[
         (str(project_root / "data" / "example.json"), "data"),
+        (str(project_root / "assets" / "icon.png"), "assets"),
         *pyqt6_datas,
     ],
     hiddenimports=[
@@ -56,6 +59,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon=str(icon_ico) if icon_ico.exists() else None,
 )
 
 coll = COLLECT(
@@ -72,7 +76,7 @@ if sys.platform == "darwin":
     app = BUNDLE(
         coll,
         name="Lower Thirds.app",
-        icon=None,
+        icon=str(icon_icns) if icon_icns.exists() else None,
         bundle_identifier="dev.lower-thirds.app",
         info_plist={
             "CFBundleDisplayName": "Lower Thirds",

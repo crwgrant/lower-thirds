@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="Lower Thirds app icon">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2a3140"/>
+      <stop offset="100%" stop-color="#12161f"/>
+    </linearGradient>
+    <linearGradient id="screen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1b2433"/>
+      <stop offset="100%" stop-color="#0c1017"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ff4d5a"/>
+      <stop offset="100%" stop-color="#e63946"/>
+    </linearGradient>
+  </defs>
+
+  <!-- App icon background -->
+  <rect width="1024" height="1024" rx="224" fill="url(#bg)"/>
+
+  <!-- Monitor frame -->
+  <rect x="148" y="168" width="728" height="520" rx="28" fill="#434c5c"/>
+  <rect x="164" y="184" width="696" height="488" rx="18" fill="url(#screen)"/>
+
+  <!-- Lower third bar (matches in-app default style) -->
+  <g transform="translate(164 538)">
+    <rect width="56" height="98" rx="4" fill="url(#accent)"/>
+    <rect x="56" y="0" width="640" height="98" rx="0" fill="#141414"/>
+    <rect x="96" y="24" width="340" height="16" rx="5" fill="#ffffff"/>
+    <rect x="96" y="52" width="220" height="12" rx="4" fill="#d0d0d0" opacity="0.85"/>
+    <rect x="96" y="72" width="160" height="10" rx="3" fill="#a8a8a8" opacity="0.65"/>
+  </g>
+
+  <!-- Simple monitor stand -->
+  <rect x="424" y="688" width="176" height="14" rx="7" fill="#434c5c"/>
+  <rect x="344" y="702" width="336" height="18" rx="9" fill="#2f3644"/>
+</svg>
