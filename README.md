@@ -4,6 +4,8 @@ Desktop app for managing and displaying lower thirds for OBS and other capture s
 
 The main window includes a chroma-key preview area at the bottom. Capture that region in OBS, apply a chroma key filter, and trigger lower thirds from the participant list.
 
+![Lower Thirds app screenshot](assets/screenshot.png)
+
 ## Run from source
 
 Requirements:
