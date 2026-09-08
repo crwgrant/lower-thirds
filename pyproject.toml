@@ -2,6 +2,7 @@
 name = "lower-thirds"
 version = "0.1.0"
 description = "Desktop app for managing and displaying lower thirds on video streams"
+license = "GPL-3.0-or-later"
 requires-python = ">=3.11"
 dependencies = [
     "pyqt6>=6.6.0",

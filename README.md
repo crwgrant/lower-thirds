@@ -1,6 +1,10 @@
 # Lower Thirds
 
+**Version 0.1.0**
+
 Desktop app for managing and displaying lower thirds for OBS and other capture software.
+
+Licensed under the [GNU General Public License v3.0 or later](LICENSE).
 
 The main window includes a chroma-key preview area at the bottom. Capture that region in OBS, apply a chroma key filter, and trigger lower thirds from the participant list.
 
@@ -38,6 +42,8 @@ Tips:
 
 Standalone builds bundle Python, PyQt6, and the app into a folder (Linux/Windows) or `.app` bundle (macOS). **Build on each target OS** — PyQt apps cannot be cross-compiled.
 
+The release version is defined in [`pyproject.toml`](pyproject.toml) (currently **0.1.0**). Build scripts use it for release archive names.
+
 ### Prerequisites (all platforms)
 
 - [uv](https://docs.astral.sh/uv/)
@@ -62,7 +68,7 @@ uv run python scripts/build.py
 Output:
 
 - Bundle: `dist/lower-thirds/lower-thirds`
-- Release archive: `dist/releases/lower-thirds-<version>-linux-<arch>.tar.gz`
+- Release archive: `dist/releases/lower-thirds-0.1.0-linux-<arch>.tar.gz`
 
 Run the bundle:
 
@@ -92,7 +98,7 @@ uv run python scripts/build.py
 Output:
 
 - Bundle: `dist\lower-thirds\lower-thirds.exe`
-- Release archive: `dist\releases\lower-thirds-<version>-windows-<arch>.zip`
+- Release archive: `dist\releases\lower-thirds-0.1.0-windows-<arch>.zip`
 
 Extract the zip and run `lower-thirds.exe`.
 
@@ -108,7 +114,7 @@ chmod +x scripts/build.sh
 Output:
 
 - Bundle: `dist/Lower Thirds.app`
-- Release archive: `dist/releases/lower-thirds-<version>-macos-<arch>.zip`
+- Release archive: `dist/releases/lower-thirds-0.1.0-macos-<arch>.zip`
 
 Open the app from Finder or:
 
@@ -133,8 +139,8 @@ uv run python scripts/build.py --no-package   # build bundle only, skip zip/tar.
 
 ## Publish a GitHub release
 
-1. Bump `version` in `pyproject.toml`.
-2. Tag the commit: `git tag v0.1.0`
+1. Bump `version` in [`pyproject.toml`](pyproject.toml) (currently `0.1.0`).
+2. Tag the commit: `git tag v0.1.0` (match the `v` prefix to the version in `pyproject.toml`).
 3. Build on Linux, Windows, and macOS (CI or local machines).
 4. Upload the three archives from `dist/releases/` to the GitHub release.
 5. Attach `data/example.json` or mention it in the release notes.
